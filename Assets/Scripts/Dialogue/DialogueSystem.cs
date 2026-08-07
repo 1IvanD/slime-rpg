@@ -19,9 +19,9 @@ public class DialogueChoice
     public string consequence;
 }
 
-public class DialogueSystem : MonoBehaviour
+public class DialogueDatabase : MonoBehaviour
 {
-    public static DialogueSystem Instance { get; private set; }
+    public static DialogueDatabase Instance { get; private set; }
 
     private Dictionary<string, DialogueNode> dialogueNodes = new Dictionary<string, DialogueNode>();
     private Dictionary<string, int> npcReputation = new Dictionary<string, int>();
@@ -123,12 +123,14 @@ public class DialogueSystem : MonoBehaviour
         {
             DialogueChoice choice = currentDialogue.choices[choiceIndex];
             Debug.Log($"💬 Ты выбрал: {choice.choiceText}");
-            
+
             if (choice.rewardGold > 0)
             {
-                EconomySystem.Instance.AddGold(choice.rewardGold);
+                // EconomySystem may not always exist in prototyping; check
+                var econ = FindObjectOfType<EconomySystem>();
+                if (econ != null) econ.AddGold(choice.rewardGold);
             }
-            
+
             if (!string.IsNullOrEmpty(choice.nextNodeId))
             {
                 StartDialogue(choice.nextNodeId);
