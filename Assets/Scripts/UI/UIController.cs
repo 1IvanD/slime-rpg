@@ -176,5 +176,94 @@ public class UIController : MonoBehaviour
         Destroy(notif);
     }
 
+    // Name input UI for MagicalBeast naming (interaction-based)
+    public void ShowNameInput(string prompt, System.Action<string> onSubmit)
+    {
+        // Use the main canvas (this.transform is the canvas when UIController is attached to MainCanvas)
+        Transform canvasTransform = this.transform;
+        if (canvasTransform == null)
+        {
+            Debug.LogWarning("UIController: Canvas transform not found for name input.");
+            return;
+        }
+
+        GameObject panel = new GameObject("NameInputPanel");
+        panel.transform.SetParent(canvasTransform, false);
+        RectTransform pr = panel.AddComponent<RectTransform>();
+        pr.sizeDelta = new Vector2(420, 140);
+        pr.anchorMin = new Vector2(0.5f, 0.1f);
+        pr.anchorMax = new Vector2(0.5f, 0.1f);
+        pr.anchoredPosition = new Vector2(0, 80);
+
+        Image bg = panel.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.85f);
+
+        // Prompt text
+        var promptGO = new GameObject("Prompt");
+        promptGO.transform.SetParent(panel.transform, false);
+        var promptText = promptGO.AddComponent<TextMeshProUGUI>();
+        promptText.text = prompt;
+        promptText.alignment = TextAlignmentOptions.TopLeft;
+        promptText.color = Color.white;
+        var pRT = promptGO.GetComponent<RectTransform>();
+        pRT.anchorMin = new Vector2(0.05f, 0.6f);
+        pRT.anchorMax = new Vector2(0.95f, 0.95f);
+        pRT.offsetMin = pRT.offsetMax = Vector2.zero;
+
+        // Input field container
+        var inputGO = new GameObject("Input");
+        inputGO.transform.SetParent(panel.transform, false);
+        var inputRT = inputGO.AddComponent<RectTransform>();
+        inputRT.anchorMin = new Vector2(0.05f, 0.25f);
+        inputRT.anchorMax = new Vector2(0.95f, 0.55f);
+        inputRT.offsetMin = inputRT.offsetMax = Vector2.zero;
+
+        var inputField = inputGO.AddComponent<TMP_InputField>();
+        var textGO = new GameObject("Text");
+        textGO.transform.SetParent(inputGO.transform, false);
+        var textComp = textGO.AddComponent<TextMeshProUGUI>();
+        textComp.fontSize = 20;
+        textComp.color = Color.white;
+        textComp.alignment = TextAlignmentOptions.Left;
+        inputField.textComponent = textComp;
+
+        // OK button
+        var okGO = new GameObject("OK");
+        okGO.transform.SetParent(panel.transform, false);
+        var okImg = okGO.AddComponent<Image>();
+        okImg.color = new Color(0.2f, 0.6f, 0.2f, 1f);
+        var okBtn = okGO.AddComponent<Button>();
+        var okText = new GameObject("Text");
+        okText.transform.SetParent(okGO.transform, false);
+        var okTMP = okText.AddComponent<TextMeshProUGUI>();
+        okTMP.text = "OK";
+        okTMP.alignment = TextAlignmentOptions.Center;
+        okTMP.color = Color.white;
+        var okRT = okGO.GetComponent<RectTransform>();
+        okRT.anchorMin = new Vector2(0.55f, 0.05f);
+        okRT.anchorMax = new Vector2(0.9f, 0.2f);
+        okRT.offsetMin = okRT.offsetMax = Vector2.zero;
+
+        // Cancel button
+        var cancelGO = new GameObject("Cancel");
+        cancelGO.transform.SetParent(panel.transform, false);
+        var cancelImg = cancelGO.AddComponent<Image>();
+        cancelImg.color = new Color(0.6f, 0.2f, 0.2f, 1f);
+        var cancelBtn = cancelGO.AddComponent<Button>();
+        var cancelText = new GameObject("Text");
+        cancelText.transform.SetParent(cancelGO.transform, false);
+        var cancelTMP = cancelText.AddComponent<TextMeshProUGUI>();
+        cancelTMP.text = "Cancel";
+        cancelTMP.alignment = TextAlignmentOptions.Center;
+        cancelTMP.color = Color.white;
+        var cancelRT = cancelGO.GetComponent<RectTransform>();
+        cancelRT.anchorMin = new Vector2(0.1f, 0.05f);
+        cancelRT.anchorMax = new Vector2(0.45f, 0.2f);
+        cancelRT.offsetMin = cancelRT.offsetMax = Vector2.zero;
+
+        okBtn.onClick.AddListener(() => { onSubmit?.Invoke(inputField.text); Destroy(panel); });
+        cancelBtn.onClick.AddListener(() => { Destroy(panel); });
+    }
+
     public static UIController GetInstance() => instance;
 }
