@@ -17,10 +17,13 @@ public class DungeonData
 public class DungeonManager : MonoBehaviour
 {
     public static DungeonManager Instance { get; private set; }
-    
+
     private Dictionary<string, DungeonData> dungeons = new Dictionary<string, DungeonData>();
     private DungeonData currentDungeon;
     private List<Enemy> spawnedEnemies = new List<Enemy>();
+
+    // Optional resource path (Resources/Prefabs/Enemies)
+    public string enemiesResourcePath = "Prefabs/Enemies";
 
     private void Awake()
     {
@@ -42,19 +45,19 @@ public class DungeonManager : MonoBehaviour
     {
         // Лес Чертовых (Forest of Jura)
         CreateDungeon("ForestOfJura", "Лес Чертовых", 1, 0.5f, new List<string> { "Goblin", "Wolf", "Slime" }, new Vector3(10, 0, 10), 5);
-        
+
         // Пещера огня (Volcanic Cavern)
         CreateDungeon("VolcanicCavern", "Вулканическая Пещера", 3, 1.5f, new List<string> { "FireSlime", "Salamander", "LavaGiant" }, new Vector3(-15, 0, 20), 8);
-        
+
         // Затопленный храм (Submerged Temple)
         CreateDungeon("SubmergedTemple", "Затопленный Храм", 2, 1.0f, new List<string> { "Dragonewt", "AquaSlime", "SeaMonster" }, new Vector3(25, 0, -10), 6);
-        
+
         // Королевство гоблинов (Goblin Kingdom)
         CreateDungeon("GoblinKingdom", "Королевство Гоблинов", 4, 2.0f, new List<string> { "GoblinLord", "GoblinArcher", "GoblinMage" }, new Vector3(-20, 0, -15), 10);
-        
+
         // Башня Раймондса (Ramiris's Tower)
         CreateDungeon("RamirisTower", "Башня Раймондса", 5, 2.5f, new List<string> { "TowerGuardian", "MagicalBeast", "Demon" }, new Vector3(0, 0, -30), 12);
-        
+
         // Лабиринт (Labyrinth)
         CreateDungeon("Labyrinth", "Лабиринт", 6, 3.0f, new List<string> { "Minotaur", "Basilisk", "Dragon" }, new Vector3(-40, 0, 0), 15);
     }
@@ -72,7 +75,7 @@ public class DungeonManager : MonoBehaviour
             maxEnemies = maxEnemies,
             lootReward = 50 * level
         };
-        
+
         dungeons[id] = dungeon;
     }
 
@@ -90,21 +93,50 @@ public class DungeonManager : MonoBehaviour
     private void SpawnEnemies()
     {
         if (currentDungeon == null) return;
-        
+
+        // Clean previous
+        foreach (var e in spawnedEnemies)
+        {
+            if (e != null) Destroy(e.gameObject);
+        }
         spawnedEnemies.Clear();
-        
+
         for (int i = 0; i < currentDungeon.maxEnemies; i++)
         {
-            // Здесь будет спавн врагов
             string enemyType = currentDungeon.enemyTypes[Random.Range(0, currentDungeon.enemyTypes.Count)];
             Vector3 spawnPos = new Vector3(Random.Range(-5, 5), 0, Random.Range(-5, 5)) + currentDungeon.position;
-            
-            // Создаем врага (здесь нужен префаб)
-            // Enemy enemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
-            // enemy.Initialize(enemyType, currentDungeon.level);
-            // spawnedEnemies.Add(enemy);
+
+            // Try to load prefab from Resources/Prefabs/Enemies/{enemyType}
+            GameObject prefab = Resources.Load<GameObject>($"{enemiesResourcePath}/{enemyType}");
+            if (prefab != null)
+            {
+                GameObject go = Instantiate(prefab, spawnPos, Quaternion.identity);
+                Enemy enemyComp = go.GetComponent<Enemy>();
+                if (enemyComp != null)
+                {
+                    enemyComp.Initialize(enemyType, currentDungeon.level);
+                    spawnedEnemies.Add(enemyComp);
+                }
+                else
+                {
+                    // If prefab doesn't have Enemy component, try to add SimpleEnemy as fallback
+                    var se = go.AddComponent<SimpleEnemy>();
+                    se.Initialize(enemyType, currentDungeon.level);
+                    spawnedEnemies.Add(se);
+                }
+            }
+            else
+            {
+                // Fallback: create primitive with SimpleEnemy
+                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                go.transform.position = spawnPos;
+                go.name = enemyType + "_Fallback";
+                var se = go.AddComponent<SimpleEnemy>();
+                se.Initialize(enemyType, currentDungeon.level);
+                spawnedEnemies.Add(se);
+            }
         }
-        
+
         Debug.Log($"Spawned {spawnedEnemies.Count} enemies in {currentDungeon.dungeonName}");
     }
 
@@ -112,7 +144,7 @@ public class DungeonManager : MonoBehaviour
     {
         foreach (Enemy enemy in spawnedEnemies)
         {
-            Destroy(enemy.gameObject);
+            if (enemy != null) Destroy(enemy.gameObject);
         }
         spawnedEnemies.Clear();
         currentDungeon = null;
