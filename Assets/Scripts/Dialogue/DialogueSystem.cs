@@ -1,31 +1,39 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
 
-[System.Serializable]
-public class DialogueNode
+// Unified DialogueSystem: stores dialogue data and renders UI dialogs.
+public class DialogueSystem : MonoBehaviour
 {
-    public string nodeId;
-    public string npcName;
-    public string dialogueText;
-    public List<DialogueChoice> choices;
-}
+    public static DialogueSystem Instance { get; private set; }
 
-[System.Serializable]
-public class DialogueChoice
-{
-    public string choiceText;
-    public string nextNodeId;
-    public int rewardGold;
-    public string consequence;
-}
+    [Serializable]
+    public class DialogueNode
+    {
+        public string nodeId;
+        public string npcName;
+        public string dialogueText;
+        public List<DialogueChoice> choices;
+    }
 
-public class DialogueDatabase : MonoBehaviour
-{
-    public static DialogueDatabase Instance { get; private set; }
+    [Serializable]
+    public class DialogueChoice
+    {
+        public string choiceText;
+        public string nextNodeId;
+        public int rewardGold;
+        public string consequence;
+    }
 
     private Dictionary<string, DialogueNode> dialogueNodes = new Dictionary<string, DialogueNode>();
     private Dictionary<string, int> npcReputation = new Dictionary<string, int>();
     private DialogueNode currentDialogue;
+
+    // UI fields
+    private GameObject dialogRoot;
+    private Text messageText;
+    private List<Button> optionButtons = new List<Button>();
 
     private void Awake()
     {
@@ -45,7 +53,7 @@ public class DialogueDatabase : MonoBehaviour
 
     private void InitializeDialogues()
     {
-        // Диалог с Риммуру
+        // Example dialogues (can be expanded or loaded from data files)
         CreateDialogue("rimuru_greeting", "Риммуру", "Привет, путник! Ты ищешь приключений?",
             new List<DialogueChoice>
             {
@@ -68,7 +76,7 @@ public class DialogueDatabase : MonoBehaviour
         CreateDialogue("rimuru_goodbye", "Риммуру", "До встречи, путник!",
             new List<DialogueChoice>());
 
-        // Диалог с торговцем
+        // Merchant
         CreateDialogue("merchant_greeting", "Торговец", "Добро пожаловать в мою лавку! Что тебя интересует?",
             new List<DialogueChoice>
             {
@@ -91,7 +99,7 @@ public class DialogueDatabase : MonoBehaviour
         CreateDialogue("merchant_goodbye", "Торговец", "Приходи еще!",
             new List<DialogueChoice>());
 
-        // Инициализация репутации
+        // Initialize reputation
         npcReputation["Риммуру"] = 50;
         npcReputation["Торговец"] = 50;
     }
@@ -108,13 +116,16 @@ public class DialogueDatabase : MonoBehaviour
         dialogueNodes[nodeId] = node;
     }
 
+    // Data API
     public void StartDialogue(string nodeId)
     {
         if (dialogueNodes.TryGetValue(nodeId, out DialogueNode node))
         {
             currentDialogue = node;
+            ShowDialogueNode(node);
             Debug.Log($"🗣️ {node.npcName}: {node.dialogueText}");
         }
+        else Debug.LogWarning($"Dialogue node not found: {nodeId}");
     }
 
     public void MakeChoice(int choiceIndex)
@@ -126,15 +137,11 @@ public class DialogueDatabase : MonoBehaviour
 
             if (choice.rewardGold > 0)
             {
-                // EconomySystem may not always exist in prototyping; check
-                var econ = FindObjectOfType<EconomySystem>();
-                if (econ != null) econ.AddGold(choice.rewardGold);
+                var economy = FindObjectOfType<EconomySystem>();
+                if (economy != null) economy.AddGold(choice.rewardGold);
             }
 
-            if (!string.IsNullOrEmpty(choice.nextNodeId))
-            {
-                StartDialogue(choice.nextNodeId);
-            }
+            if (!string.IsNullOrEmpty(choice.nextNodeId)) StartDialogue(choice.nextNodeId);
         }
     }
 
@@ -149,4 +156,90 @@ public class DialogueDatabase : MonoBehaviour
 
     public DialogueNode GetCurrentDialogue() => currentDialogue;
     public int GetReputation(string npcName) => npcReputation.TryGetValue(npcName, out var rep) ? rep : 0;
+
+    // UI API
+    public void ShowDialog(string message, string[] options, Action<int> onChoose)
+    {
+        EnsureUI();
+        if (messageText != null) messageText.text = message;
+
+        // Clear old
+        foreach (var b in optionButtons) Destroy(b.gameObject);
+        optionButtons.Clear();
+
+        for (int i = 0; i < options.Length; i++)
+        {
+            int idx = i;
+            var btnGO = CreateButton(options[i]);
+            btnGO.transform.SetParent(dialogRoot.transform, false);
+            var btn = btnGO.GetComponent<Button>();
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(() => { HideDialog(); onChoose?.Invoke(idx); });
+            optionButtons.Add(btn);
+        }
+
+        dialogRoot.SetActive(true);
+    }
+
+    private void ShowDialogueNode(DialogueNode node)
+    {
+        if (node == null) return;
+        string[] opts = new string[node.choices != null ? node.choices.Count : 0];
+        for (int i = 0; i < opts.Length; i++) opts[i] = node.choices[i].choiceText;
+        ShowDialog($"{node.npcName}: {node.dialogueText}", opts, (idx) => { MakeChoice(idx); });
+    }
+
+    private GameObject CreateButton(string text)
+    {
+        var go = new GameObject("OptionButton");
+        var img = go.AddComponent<Image>();
+        img.color = new Color(0.2f, 0.2f, 0.2f, 1f);
+        var btn = go.AddComponent<Button>();
+
+        var txtGO = new GameObject("Text");
+        txtGO.transform.SetParent(go.transform, false);
+        var txt = txtGO.AddComponent<Text>();
+        txt.text = text;
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.color = Color.white;
+        var rt = go.AddComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(300, 40);
+        return go;
+    }
+
+    private void EnsureUI()
+    {
+        if (dialogRoot != null) return;
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas == null)
+        {
+            Debug.LogWarning("DialogueSystem: Canvas not found.");
+            return;
+        }
+
+        dialogRoot = new GameObject("DialogRoot");
+        dialogRoot.transform.SetParent(canvas.transform, false);
+        var bg = dialogRoot.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.8f);
+        var rt = dialogRoot.AddComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.2f, 0.2f);
+        rt.anchorMax = new Vector2(0.8f, 0.5f);
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+
+        var msgGO = new GameObject("Message");
+        msgGO.transform.SetParent(dialogRoot.transform, false);
+        messageText = msgGO.AddComponent<Text>();
+        messageText.color = Color.white;
+        messageText.alignment = TextAnchor.UpperLeft;
+        var msgRT = msgGO.GetComponent<RectTransform>();
+        msgRT.anchorMin = new Vector2(0.05f, 0.4f);
+        msgRT.anchorMax = new Vector2(0.95f, 0.95f);
+
+        dialogRoot.SetActive(false);
+    }
+
+    public void HideDialog()
+    {
+        if (dialogRoot != null) dialogRoot.SetActive(false);
+    }
 }
