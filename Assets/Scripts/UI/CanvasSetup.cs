@@ -38,6 +38,24 @@ public class CanvasSetup : MonoBehaviour
         
         // Создание уведомлений
         CreateNotificationPanel(canvasObj.transform);
+
+        // --- Новые строки: добавляем контроллеры и менеджер игры ---
+
+        // Добавляем UIController, чтобы он искал элементы под transform канваса
+        if (canvasObj.GetComponent<UIController>() == null)
+            canvasObj.AddComponent<UIController>();
+
+        // Добавляем PauseMenu, чтобы он создал панель паузы и реагировал на P
+        if (canvasObj.GetComponent<PauseMenu>() == null)
+            canvasObj.AddComponent<PauseMenu>();
+
+        // Создаём GameManager singleton, если его нет
+        if (UnityEngine.Object.FindObjectOfType<GameManager>() == null)
+        {
+            GameObject gm = new GameObject("GameManager");
+            gm.AddComponent<GameManager>();
+            UnityEngine.Object.DontDestroyOnLoad(gm);
+        }
     }
     
     private static void CreateHUDPanel(Transform canvasTransform)
