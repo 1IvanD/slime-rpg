@@ -1,8 +1,7 @@
 using UnityEngine;
 
-public class SimpleEnemy : MonoBehaviour
+public class SimpleEnemy : Enemy
 {
-    public float health = 20f;
     public float speed = 2f;
     public float chaseRange = 6f;
     public float attackRange = 1.2f;
@@ -18,6 +17,9 @@ public class SimpleEnemy : MonoBehaviour
         player = FindObjectOfType<Player>()?.transform;
         pointA = transform.position;
         pointB = transform.position + transform.right * 3f;
+
+        // If not initialized by factory, set default health from Enemy.Initialize
+        if (health <= 0) health = 20f;
     }
 
     private void Update()
@@ -44,15 +46,14 @@ public class SimpleEnemy : MonoBehaviour
         }
     }
 
-    public void TakeDamage(float amount)
+    public override void TakeDamage(float amount)
     {
-        health -= amount;
-        if (health <= 0) Die();
+        base.TakeDamage(amount);
     }
 
-    private void Die()
+    public override void Die()
     {
         UIController.GetInstance()?.ShowNotification($"Монстр побеждён: {gameObject.name}");
-        Destroy(gameObject);
+        base.Die();
     }
 }
