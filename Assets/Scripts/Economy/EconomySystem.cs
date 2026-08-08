@@ -81,4 +81,14 @@ public class EconomySystem : MonoBehaviour
     public float GetExperiencePoints() => playerExperiencePoints;
     public int GetLevel() => playerLevel;
     public float GetTotalWealthGenerated() => totalWealthGenerated;
+
+    // Added helpers to work with SaveSystem and other callers
+    public void SetGold(float amount)
+    {
+        playerGold = amount;
+        Debug.Log($"Gold set to: {playerGold}");
+    }
+
+    // Alias used by older code
+    public int GetPlayerLevel() => GetLevel();
 }
