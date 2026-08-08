@@ -17,6 +17,10 @@ public class StoryEventManager : MonoBehaviour
         public bool falmosAttackTriggered = false;
         public string playerEvolution = "None";
         public string settlementName = "";
+
+        [System.Serializable]
+        public class NamedEntity { public string id; public string name; public string type; public Vector3 position; }
+        public List<NamedEntity> namedEntities = new List<NamedEntity>();
     }
 
     public WorldState state = new WorldState();
@@ -110,7 +114,7 @@ public class StoryEventManager : MonoBehaviour
         go.name = $"Faction_{name}";
         go.transform.position = pos;
         var label = go.AddComponent<SimpleLabel>();
-        label.label = name;
+        label.SetLabel(name);
     }
 
     public void SpawnOrcArmy()
@@ -155,26 +159,106 @@ public class StoryEventManager : MonoBehaviour
         {
             Vector3 pos = spawnCenter + Random.insideUnitSphere * 4f;
             pos.y = 1f;
-            GameObject prefab = Resources.Load<GameObject>($"{enemiesResourcePath}/Ogre");
+            string enemyType = "Ogre";
+            GameObject prefab = Resources.Load<GameObject>($"{enemiesResourcePath}/{enemyType}");
+            GameObject go;
             if (prefab != null)
             {
-                var go = Instantiate(prefab, pos, Quaternion.identity);
+                go = Instantiate(prefab, pos, Quaternion.identity);
                 var e = go.GetComponent<Enemy>();
-                if (e != null) e.Initialize("Ogre", 5);
-                else { var og = go.AddComponent<Ogre>(); og.Initialize("Ogre", 5); }
+                if (e != null) e.Initialize(enemyType, 5);
+                else { var og = go.AddComponent<Ogre>(); og.Initialize(enemyType, 5); }
             }
             else
             {
-                var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                go = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 go.transform.localScale = Vector3.one * 2.5f;
                 go.transform.position = pos;
                 go.name = "Ogre_Fallback";
                 var og = go.AddComponent<Ogre>();
-                og.Initialize("Ogre", 5);
+                og.Initialize(enemyType, 5);
+            }
+
+            // Apply saved name if exists nearby
+            var mb = go.GetComponent<MagicalBeast>();
+            if (mb != null)
+            {
+                var saved = FindSavedNamedEntityNear(enemyType, pos, 2f);
+                if (saved != null)
+                {
+                    mb.uniqueId = saved.id;
+                    mb.SetName(saved.name);
+                }
+                else
+                {
+                    // add a label with default name
+                    var lbl = go.AddComponent<SimpleLabel>();
+                    lbl.SetLabel(mb.displayName);
+                }
             }
         }
 
         UIController.GetInstance()?.ShowNotification($"Появились огры в округе ({count}).");
+    }
+
+    private WorldState.NamedEntity FindSavedNamedEntityNear(string type, Vector3 pos, float radius)
+    {
+        foreach (var n in state.namedEntities)
+        {
+            if (n.type == type && Vector3.Distance(n.position, pos) <= radius) return n;
+        }
+        return null;
+    }
+
+    public void RegisterNamedBeast(string id, string name, string type, Vector3 pos)
+    {
+        // Save or update existing entry by id
+        var existing = state.namedEntities.Find(x => x.id == id);
+        if (existing != null)
+        {
+            existing.name = name;
+            existing.position = pos;
+            existing.type = type;
+        }
+        else
+        {
+            state.namedEntities.Add(new WorldState.NamedEntity { id = id, name = name, type = type, position = pos });
+        }
+        SaveState();
+    }
+
+    public void OnOgresJoinSettlement()
+    {
+        // When ogres join after quest 4.5
+        var settlement = FindObjectOfType<SettlementSystem>();
+        if (settlement == null) return;
+
+        // Names and roles from the anime list you provided
+        var roster = new Dictionary<string, string>
+        {
+            { "Benimaru", "Commander" },
+            { "Shuna", "Artisan" },
+            { "Soika", "Scout" },
+            { "Hakuro", "SwordMaster" },
+            { "Kurei", "Bodyguard" },
+            { "Kureishi", "Blacksmith" }
+        };
+
+        Vector3 basePos = new Vector3(15f, 0f, 5f);
+        int i = 0;
+        foreach (var kv in roster)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            go.name = kv.Key;
+            go.transform.position = basePos + new Vector3(i * 1.5f, 0f, 0f);
+            var lbl = go.AddComponent<SimpleLabel>();
+            lbl.SetLabel(kv.Key);
+            settlement.AssignRole(kv.Key, kv.Value);
+            i++;
+        }
+
+        UIController.GetInstance()?.ShowNotification("Огры присоединились к Темпесту и получили роли.");
+        SaveState();
     }
 
     public void TriggerFalmosAttack()
