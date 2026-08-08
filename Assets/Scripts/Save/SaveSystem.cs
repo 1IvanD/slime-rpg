@@ -45,7 +45,7 @@ public class SaveSystem : MonoBehaviour
             SaveData data = new SaveData
             {
                 playerName = "Player",
-                level = EconomySystem.Instance.GetPlayerLevel(),
+                level = EconomySystem.Instance.GetLevel(),
                 exp = (int)EconomySystem.Instance.GetExperiencePoints(),
                 gold = (int)EconomySystem.Instance.GetGold(),
                 healthPoints = 100,

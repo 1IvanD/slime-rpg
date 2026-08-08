@@ -104,16 +104,22 @@ public class WorldMapUI : MonoBehaviour
         // Элементы списка
         if (isDungeons)
         {
-            foreach (DungeonData dungeon in items)
+            foreach (T item in items)
             {
-                CreateMapItemButton(parent, dungeon.dungeonName, dungeon.isDiscovered);
+                if (item is DungeonData dungeon)
+                {
+                    CreateMapItemButton(parent, dungeon.dungeonName, dungeon.isDiscovered);
+                }
             }
         }
         else
         {
-            foreach (SettlementData settlement in items)
+            foreach (T item in items)
             {
-                CreateMapItemButton(parent, settlement.settlementName, settlement.isDiscovered);
+                if (item is SettlementData settlement)
+                {
+                    CreateMapItemButton(parent, settlement.settlementName, settlement.isDiscovered);
+                }
             }
         }
     }
