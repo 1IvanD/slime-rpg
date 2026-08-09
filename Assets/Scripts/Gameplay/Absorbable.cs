@@ -2,20 +2,25 @@ using UnityEngine;
 
 public class Absorbable : MonoBehaviour
 {
-    public string resourceName = "Organic Material";
-    public float resourceValue = 10f; // fallback value to reward
+    public string resourceId = "hipokute"; // matches ItemsDatabase ids
     public int amount = 1;
 
-    // Called by PlayerAbilities.TryAbsorb
     public void OnAbsorbed(PlayerAbilities by)
     {
-        // Simple placeholder: convert absorbed resource to gold via EconomySystem
-        if (EconomySystem.Instance != null)
+        if (by == null) return;
+        var stomach = by.GetComponent<StomachInventory>();
+        if (stomach != null)
         {
-            EconomySystem.Instance.AddGold(resourceValue * amount);
+            stomach.AddMaterial(resourceId, amount);
+            UIController.GetInstance()?.ShowNotification($"Поглощено: {resourceId} x{amount}");
+        }
+        else
+        {
+            // fallback: add gold
+            EconomySystem.Instance?.AddGold(10f * amount);
+            UIController.GetInstance()?.ShowNotification($"Поглощено и конвертировано: {resourceId}");
         }
 
-        // Optionally trigger other logic (inventory, quests)
         Destroy(gameObject);
     }
 }
