@@ -16,15 +16,70 @@ public class LootSpawner : MonoBehaviour
 
     public void SpawnLoot(Vector3 atPosition)
     {
-        // Try to add to InventorySystem of nearest player
-        var player = FindObjectOfType<Player>();
-        if (player != null && InventorySystem.Instance != null)
+        SpawnLoot(atPosition, null);
+    }
+
+    public void SpawnLoot(Vector3 atPosition, LootTableSO table)
+    {
+        if (table != null && table.entries != null && table.entries.Count > 0)
         {
-            InventorySystem.Instance.AddItem(defaultDropItemId, defaultDropItemId, ItemRarity.Common, ItemCategory.Resource, 0.1f, defaultDropAmount, "Looted item", 0);
-            UIController.GetInstance()?.ShowNotification($"Получено лут: {defaultDropItemId} x{defaultDropAmount}");
+            foreach (var e in table.entries)
+            {
+                if (Random.value <= e.chance)
+                {
+                    int qty = Mathf.Max(1, Random.Range(e.minAmount, e.maxAmount + 1));
+                    TryGiveItemToPlayer(e.itemId, qty);
+                    Debug.Log($"LootSpawner: Dropped {qty}x {e.itemId}");
+                }
+            }
             return;
         }
-        // otherwise just log
-        Debug.Log($"LootSpawner: dropped {defaultDropItemId} at {atPosition}");
+
+        // fallback
+        TryGiveItemToPlayer(defaultDropItemId, defaultDropAmount);
+        Debug.Log($"LootSpawner: dropped default {defaultDropItemId} at {atPosition}");
+    }
+
+    private void TryGiveItemToPlayer(string itemId, int qty)
+    {
+        var player = FindObjectOfType<Player>();
+        var db = ItemsDatabase.Instance;
+        if (db != null)
+        {
+            var so = db.GetItem(itemId);
+            if (so != null)
+            {
+                // map TempestItemType -> ItemCategory
+                ItemCategory cat = MapTypeToCategory(so.itemType, so);
+                float weight = so.weight;
+                float value = so.value;
+                InventorySystem.Instance?.AddItem(so.id, so.displayName, so.rarity, cat, weight, qty, so.description, value);
+                UIController.GetInstance()?.ShowNotification($"Получено: {so.displayName} x{qty}");
+                return;
+            }
+        }
+
+        // fallback to string id usage
+        InventorySystem.Instance?.AddItem(itemId, itemId, ItemRarity.Common, ItemCategory.Resource, 0.1f, qty, "Looted item", 0);
+    }
+
+    private ItemCategory MapTypeToCategory(TempestItemType t, ItemSO so)
+    {
+        switch (t)
+        {
+            case TempestItemType.Consumable: return ItemCategory.Consumable;
+            case TempestItemType.Equipment:
+                // try to guess weapon vs armor based on equipSlot
+                if (!string.IsNullOrEmpty(so.equipSlot))
+                {
+                    var s = so.equipSlot.ToLower();
+                    if (s.Contains("weapon") || s.Contains("weapon")) return ItemCategory.Weapon;
+                    if (s.Contains("chest") || s.Contains("armor") || s.Contains("body")) return ItemCategory.Armor;
+                }
+                return ItemCategory.Artifact;
+            case TempestItemType.Artifact: return ItemCategory.Artifact;
+            case TempestItemType.Resource:
+            default: return ItemCategory.Resource;
+        }
     }
 }

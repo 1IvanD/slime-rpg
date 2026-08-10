@@ -10,6 +10,8 @@ public class EnemyBehaviour : MonoBehaviour
     public float aggroRange = 6f;
     public float patrolSpeed = 2f;
 
+    public LootTableSO lootTable; // assign per enemy in Inspector
+
     private Transform player;
     private Vector3 startPos;
     private bool isDead = false;
@@ -56,7 +58,7 @@ public class EnemyBehaviour : MonoBehaviour
             if (p != null) p.AddExperience(xpReward);
         }
         // spawn loot via LootSpawner
-        LootSpawner.Instance?.SpawnLoot(transform.position);
+        LootSpawner.Instance?.SpawnLoot(transform.position, lootTable);
         UIController.GetInstance()?.ShowNotification($"Монстр побеждён: {gameObject.name}");
         Destroy(gameObject);
     }

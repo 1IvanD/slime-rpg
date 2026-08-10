@@ -21,4 +21,8 @@ public class ItemSO : ScriptableObject
     public int maxStack = 99;
     public ItemRarity rarity = ItemRarity.Common;
     public string equipSlot; // e.g., "Weapon", "Chest", "Accessory"
+
+    [Header("Physical & Economic")]
+    public float weight = 0.1f;
+    public float value = 10f;
 }
