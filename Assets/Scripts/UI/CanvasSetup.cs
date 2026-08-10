@@ -39,11 +39,22 @@ public class CanvasSetup : MonoBehaviour
         // Создание уведомлений
         CreateNotificationPanel(canvasObj.transform);
 
+        // Создание панели инвентаря
+        CreateInventoryPanel(canvasObj.transform);
+
         // --- Новые строки: добавляем контроллеры и менеджер игры ---
 
         // Добавляем UIController, чтобы он искал элементы под transform канваса
         if (canvasObj.GetComponent<UIController>() == null)
             canvasObj.AddComponent<UIController>();
+
+        // Добавляем InventoryUIController on canvas
+        if (canvasObj.GetComponent<InventoryUIController>() == null)
+            canvasObj.AddComponent<InventoryUIController>();
+
+        // Добавляем SkillsUIController on canvas
+        if (canvasObj.GetComponent<SkillsUIController>() == null)
+            canvasObj.AddComponent<SkillsUIController>();
 
         // Добавляем PauseMenu, чтобы он создал панель паузы и реагировал на P
         if (canvasObj.GetComponent<PauseMenu>() == null)
@@ -83,369 +94,134 @@ public class CanvasSetup : MonoBehaviour
         
         // Название врага
         CreateEnemyNameDisplay(hudPanel.transform);
+
+        // Buttons: Inventory, Skills, Menu
+        CreateHUDButton(hudPanel.transform, "InventoryButton", "Inventory [I]", new Vector2(60, 60), new Vector2(-200, 0), () => { UIController.GetInstance()?.ToggleInventoryUI(); });
+        CreateHUDButton(hudPanel.transform, "SkillsButton", "Skills [K]", new Vector2(60, 60), new Vector2(-120, 0), () => { UIController.GetInstance()?.ToggleSkillsUI(); });
+        CreateHUDButton(hudPanel.transform, "MenuButton", "Menu [Esc]", new Vector2(60, 60), new Vector2(-40, 0), () => { GameManager.Instance?.PauseGame(); });
     }
-    
-    private static void CreateHealthDisplay(Transform parent)
+
+    private static void CreateHUDButton(Transform parent, string name, string text, Vector2 size, Vector2 anchoredPosition, UnityEngine.Events.UnityAction onClick)
     {
-        GameObject healthObj = new GameObject("HealthDisplay");
-        healthObj.transform.SetParent(parent, false);
-        
-        RectTransform healthRect = healthObj.AddComponent<RectTransform>();
-        healthRect.anchorMin = Vector2.zero;
-        healthRect.anchorMax = new Vector2(0.3f, 1);
-        healthRect.offsetMin = new Vector2(20, 10);
-        healthRect.offsetMax = new Vector2(-10, -10);
-        
-        // Фон
-        Image bgImage = healthObj.AddComponent<Image>();
-        bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-        
-        // Текст здоровья
-        GameObject healthTextObj = new GameObject("HealthText");
-        healthTextObj.transform.SetParent(healthObj.transform, false);
-        
-        RectTransform healthTextRect = healthTextObj.AddComponent<RectTransform>();
-        healthTextRect.anchorMin = Vector2.zero;
-        healthTextRect.anchorMax = Vector2.one;
-        healthTextRect.offsetMin = Vector2.zero;
-        healthTextRect.offsetMax = Vector2.zero;
-        
-        TextMeshProUGUI healthText = healthTextObj.AddComponent<TextMeshProUGUI>();
-        healthText.text = "HP: 100/100";
-        healthText.fontSize = 36;
-        healthText.alignment = TextAlignmentOptions.Center;
-        healthText.color = Color.white;
-        
-        // Полоса здоровья
-        GameObject healthBarObj = new GameObject("HealthBar");
-        healthBarObj.transform.SetParent(healthObj.transform, false);
-        
-        RectTransform healthBarRect = healthBarObj.AddComponent<RectTransform>();
-        healthBarRect.anchorMin = Vector2.zero;
-        healthBarRect.anchorMax = new Vector2(1, 0.3f);
-        healthBarRect.offsetMin = new Vector2(5, 5);
-        healthBarRect.offsetMax = new Vector2(-5, -5);
-        
-        Image healthBarBg = healthBarObj.AddComponent<Image>();
-        healthBarBg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
-        
-        // Заполнение полосы
-        GameObject healthBarFillObj = new GameObject("Fill");
-        healthBarFillObj.transform.SetParent(healthBarObj.transform, false);
-        
-        RectTransform healthBarFillRect = healthBarFillObj.AddComponent<RectTransform>();
-        healthBarFillRect.anchorMin = Vector2.zero;
-        healthBarFillRect.anchorMax = new Vector2(1, 1);
-        healthBarFillRect.offsetMin = Vector2.zero;
-        healthBarFillRect.offsetMax = Vector2.zero;
-        
-        Image healthBarFill = healthBarFillObj.AddComponent<Image>();
-        healthBarFill.color = Color.red;
+        var btnGO = new GameObject(name);
+        btnGO.transform.SetParent(parent, false);
+        var rt = btnGO.AddComponent<RectTransform>();
+        rt.sizeDelta = size;
+        rt.anchorMin = new Vector2(1, 0.5f);
+        rt.anchorMax = new Vector2(1, 0.5f);
+        rt.anchoredPosition = anchoredPosition;
+
+        var img = btnGO.AddComponent<Image>();
+        img.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+        var btn = btnGO.AddComponent<Button>();
+        btn.onClick.AddListener(onClick);
+
+        var txtGO = new GameObject("Text"); txtGO.transform.SetParent(btnGO.transform, false);
+        var txt = txtGO.AddComponent<TextMeshProUGUI>(); txt.text = text; txt.alignment = TextAlignmentOptions.Center; txt.color = Color.white; txt.fontSize = 14;
+        var txtRT = txtGO.GetComponent<RectTransform>(); txtRT.anchorMin = Vector2.zero; txtRT.anchorMax = Vector2.one; txtRT.offsetMin = Vector2.zero; txtRT.offsetMax = Vector2.zero;
     }
-    
-    private static void CreateLevelDisplay(Transform parent)
+
+    private static void CreateInventoryPanel(Transform canvasTransform)
     {
-        GameObject levelObj = new GameObject("LevelDisplay");
-        levelObj.transform.SetParent(parent, false);
-        
-        RectTransform levelRect = levelObj.AddComponent<RectTransform>();
-        levelRect.anchorMin = new Vector2(0.3f, 0);
-        levelRect.anchorMax = new Vector2(0.5f, 1);
-        levelRect.offsetMin = new Vector2(10, 10);
-        levelRect.offsetMax = new Vector2(-10, -10);
-        
-        Image bgImage = levelObj.AddComponent<Image>();
-        bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-        
-        GameObject levelTextObj = new GameObject("LevelText");
-        levelTextObj.transform.SetParent(levelObj.transform, false);
-        
-        RectTransform levelTextRect = levelTextObj.AddComponent<RectTransform>();
-        levelTextRect.anchorMin = Vector2.zero;
-        levelTextRect.anchorMax = Vector2.one;
-        levelTextRect.offsetMin = Vector2.zero;
-        levelTextRect.offsetMax = Vector2.zero;
-        
-        TextMeshProUGUI levelText = levelTextObj.AddComponent<TextMeshProUGUI>();
-        levelText.text = "Level: 1";
-        levelText.fontSize = 36;
-        levelText.alignment = TextAlignmentOptions.Center;
-        levelText.color = Color.yellow;
+        GameObject invPanel = new GameObject("InventoryPanel");
+        invPanel.transform.SetParent(canvasTransform, false);
+        var rt = invPanel.AddComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.6f, 0.1f); rt.anchorMax = new Vector2(0.98f, 0.6f);
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        var bg = invPanel.AddComponent<Image>(); bg.color = new Color(0.02f, 0.02f, 0.05f, 0.9f);
+
+        // Title
+        var title = new GameObject("Title"); title.transform.SetParent(invPanel.transform, false);
+        var titleText = title.AddComponent<TextMeshProUGUI>(); titleText.text = "Inventory"; titleText.fontSize = 28; titleText.color = Color.white;
+        var titleRT = title.GetComponent<RectTransform>(); titleRT.anchorMin = new Vector2(0.02f, 0.9f); titleRT.anchorMax = new Vector2(0.98f, 0.98f);
+
+        // List container
+        var list = new GameObject("List"); list.transform.SetParent(invPanel.transform, false);
+        var listRT = list.AddComponent<RectTransform>(); listRT.anchorMin = new Vector2(0.02f, 0.02f); listRT.anchorMax = new Vector2(0.98f, 0.86f);
+        var vlg = list.AddComponent<VerticalLayoutGroup>(); vlg.spacing = 6; vlg.childForceExpandHeight = false; vlg.childControlHeight = true;
+
+        // Attach InventoryUIController
+        var invCtrl = invPanel.AddComponent<InventoryUIController>();
+        invCtrl.rootPanel = invPanel;
+        invCtrl.listContainer = list.transform;
+        invCtrl.listItemPrefab = Resources.Load<GameObject>("Prefabs/ChoiceButton");
+
+        invPanel.SetActive(false);
     }
-    
-    private static void CreateExperienceDisplay(Transform parent)
-    {
-        GameObject expObj = new GameObject("ExperienceDisplay");
-        expObj.transform.SetParent(parent, false);
-        
-        RectTransform expRect = expObj.AddComponent<RectTransform>();
-        expRect.anchorMin = new Vector2(0.5f, 0);
-        expRect.anchorMax = new Vector2(0.75f, 1);
-        expRect.offsetMin = new Vector2(10, 10);
-        expRect.offsetMax = new Vector2(-10, -10);
-        
-        Image bgImage = expObj.AddComponent<Image>();
-        bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-        
-        GameObject expTextObj = new GameObject("ExperienceText");
-        expTextObj.transform.SetParent(expObj.transform, false);
-        
-        RectTransform expTextRect = expTextObj.AddComponent<RectTransform>();
-        expTextRect.anchorMin = Vector2.zero;
-        expTextRect.anchorMax = Vector2.one;
-        expTextRect.offsetMin = Vector2.zero;
-        expTextRect.offsetMax = Vector2.zero;
-        
-        TextMeshProUGUI expText = expTextObj.AddComponent<TextMeshProUGUI>();
-        expText.text = "Exp: 0/100";
-        expText.fontSize = 32;
-        expText.alignment = TextAlignmentOptions.Center;
-        expText.color = new Color(0.5f, 1, 0.5f);
-    }
-    
-    private static void CreateEnemyNameDisplay(Transform parent)
-    {
-        GameObject enemyObj = new GameObject("EnemyNameDisplay");
-        enemyObj.transform.SetParent(parent, false);
-        
-        RectTransform enemyRect = enemyObj.AddComponent<RectTransform>();
-        enemyRect.anchorMin = new Vector2(0.75f, 0);
-        enemyRect.anchorMax = Vector2.one;
-        enemyRect.offsetMin = new Vector2(10, 10);
-        enemyRect.offsetMax = new Vector2(-20, -10);
-        
-        Image bgImage = enemyObj.AddComponent<Image>();
-        bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-        
-        GameObject enemyTextObj = new GameObject("EnemyText");
-        enemyTextObj.transform.SetParent(enemyObj.transform, false);
-        
-        RectTransform enemyTextRect = enemyTextObj.AddComponent<RectTransform>();
-        enemyTextRect.anchorMin = Vector2.zero;
-        enemyTextRect.anchorMax = Vector2.one;
-        enemyTextRect.offsetMin = Vector2.zero;
-        enemyTextRect.offsetMax = Vector2.zero;
-        
-        TextMeshProUGUI enemyText = enemyTextObj.AddComponent<TextMeshProUGUI>();
-        enemyText.text = "No enemy targeted";
-        enemyText.fontSize = 28;
-        enemyText.alignment = TextAlignmentOptions.Center;
-        enemyText.color = Color.white;
-    }
-    
+
     private static void CreateSkillsPanel(Transform canvasTransform)
     {
         GameObject skillsPanel = new GameObject("SkillsPanel");
         skillsPanel.transform.SetParent(canvasTransform, false);
-        
-        RectTransform skillsRect = skillsPanel.AddComponent<RectTransform>();
-        skillsRect.anchorMin = new Vector2(0, 0.85f);
-        skillsRect.anchorMax = Vector2.one;
-        skillsRect.offsetMin = Vector2.zero;
-        skillsRect.offsetMax = Vector2.zero;
-        
-        Image skillsBg = skillsPanel.AddComponent<Image>();
-        skillsBg.color = new Color(0, 0, 0, 0.7f);
-        
-        // Заголовок
+
+        RectTransform rect = skillsPanel.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        Image bg = skillsPanel.AddComponent<Image>();
+        bg.color = new Color(0.05f, 0.1f, 0.05f, 0.95f);
+
+        VerticalLayoutGroup layout = skillsPanel.AddComponent<VerticalLayoutGroup>();
+        layout.spacing = 15;
+        layout.padding = new RectOffset(30, 30, 30, 30);
+
         GameObject titleObj = new GameObject("Title");
         titleObj.transform.SetParent(skillsPanel.transform, false);
-        
         RectTransform titleRect = titleObj.AddComponent<RectTransform>();
-        titleRect.anchorMin = Vector2.zero;
-        titleRect.anchorMax = new Vector2(0.3f, 1);
-        titleRect.offsetMin = new Vector2(10, 5);
-        titleRect.offsetMax = new Vector2(-10, -5);
-        
+        titleRect.sizeDelta = new Vector2(0, 60);
         TextMeshProUGUI titleText = titleObj.AddComponent<TextMeshProUGUI>();
         titleText.text = "Skills";
-        titleText.fontSize = 28;
+        titleText.fontSize = 44;
         titleText.alignment = TextAlignmentOptions.Center;
-        titleText.color = Color.cyan;
-        
-        // Список умений
-        GameObject skillListObj = new GameObject("SkillsList");
-        skillListObj.transform.SetParent(skillsPanel.transform, false);
-        
-        RectTransform skillListRect = skillListObj.AddComponent<RectTransform>();
-        skillListRect.anchorMin = new Vector2(0.3f, 0);
-        skillListRect.anchorMax = Vector2.one;
-        skillListRect.offsetMin = new Vector2(5, 5);
-        skillListRect.offsetMax = new Vector2(-5, -5);
-        
-        HorizontalLayoutGroup layoutGroup = skillListObj.AddComponent<HorizontalLayoutGroup>();
-        layoutGroup.spacing = 5;
-        layoutGroup.childForceExpandWidth = true;
-        layoutGroup.childForceExpandHeight = true;
+        titleText.color = Color.green;
+
+        // Skills list container
+        var skillsList = new GameObject("SkillsList");
+        skillsList.transform.SetParent(skillsPanel.transform, false);
+        var listRT = skillsList.AddComponent<RectTransform>();
+        listRT.sizeDelta = new Vector2(0, 400);
+
+        // Attach SkillsUIController
+        var sCtrl = skillsPanel.AddComponent<SkillsUIController>();
+        sCtrl.rootPanel = skillsPanel;
+        sCtrl.listContainer = skillsList.transform;
+        sCtrl.entryPrefab = Resources.Load<GameObject>("Prefabs/ChoiceButton");
+
+        skillsPanel.SetActive(false);
     }
-    
+
     private static void CreateStatsPanel(Transform canvasTransform)
     {
-        GameObject statsPanel = new GameObject("StatsPanel");
-        statsPanel.transform.SetParent(canvasTransform, false);
-        
-        RectTransform statsRect = statsPanel.AddComponent<RectTransform>();
-        statsRect.anchorMin = new Vector2(0.85f, 0.15f);
-        statsRect.anchorMax = Vector2.one;
-        statsRect.offsetMin = new Vector2(-300, 10);
-        statsRect.offsetMax = new Vector2(-10, -10);
-        
-        Image statsBg = statsPanel.AddComponent<Image>();
-        statsBg.color = new Color(0.1f, 0.1f, 0.1f, 0.9f);
-        
-        VerticalLayoutGroup layoutGroup = statsPanel.AddComponent<VerticalLayoutGroup>();
-        layoutGroup.spacing = 5;
-        layoutGroup.padding = new RectOffset(10, 10, 10, 10);
-        layoutGroup.childForceExpandWidth = true;
-        
-        // Атака
-        CreateStatLine(statsPanel.transform, "ATK", "0");
-        
-        // Защита
-        CreateStatLine(statsPanel.transform, "DEF", "0");
-        
-        // Поглощено врагов
-        CreateStatLine(statsPanel.transform, "Absorbed", "0");
-        
-        // Выученные умения
-        CreateStatLine(statsPanel.transform, "Skills", "0");
+        GameObject stats = new GameObject("StatsPanel");
+        stats.transform.SetParent(canvasTransform, false);
+        RectTransform rt = stats.AddComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.02f, 0.15f); rt.anchorMax = new Vector2(0.22f, 0.45f);
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        Image bg = stats.AddComponent<Image>(); bg.color = new Color(0.05f, 0.05f, 0.08f, 0.9f);
+
+        // Simple text placeholders for stats
+        var atk = new GameObject("ATKStat"); atk.transform.SetParent(stats.transform, false); var atkT = atk.AddComponent<TextMeshProUGUI>(); atkT.text = "ATK: 0"; atkT.color = Color.white;
+        var def = new GameObject("DEFStat"); def.transform.SetParent(stats.transform, false); var defT = def.AddComponent<TextMeshProUGUI>(); defT.text = "DEF: 0"; defT.color = Color.white;
+        var abs = new GameObject("AbsorbedStat"); abs.transform.SetParent(stats.transform, false); var absT = abs.AddComponent<TextMeshProUGUI>(); absT.text = "Absorbed: 0"; absT.color = Color.white;
+        var skl = new GameObject("SkillsStat"); skl.transform.SetParent(stats.transform, false); var sklT = skl.AddComponent<TextMeshProUGUI>(); sklT.text = "Skills: 0"; sklT.color = Color.white;
     }
-    
-    private static void CreateStatLine(Transform parent, string label, string value)
-    {
-        GameObject lineObj = new GameObject($"{label}Stat");
-        lineObj.transform.SetParent(parent, false);
-        
-        RectTransform lineRect = lineObj.AddComponent<RectTransform>();
-        lineRect.anchorMin = Vector2.zero;
-        lineRect.anchorMax = Vector2.one;
-        lineRect.offsetMin = Vector2.zero;
-        lineRect.offsetMax = Vector2.zero;
-        lineRect.sizeDelta = new Vector2(0, 30);
-        
-        HorizontalLayoutGroup hLayout = lineObj.AddComponent<HorizontalLayoutGroup>();
-        hLayout.spacing = 5;
-        hLayout.childForceExpandWidth = true;
-        
-        // Ярлык
-        GameObject labelObj = new GameObject("Label");
-        labelObj.transform.SetParent(lineObj.transform, false);
-        
-        RectTransform labelRect = labelObj.AddComponent<RectTransform>();
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = Vector2.zero;
-        labelRect.offsetMax = Vector2.zero;
-        labelRect.sizeDelta = new Vector2(80, 0);
-        
-        TextMeshProUGUI labelText = labelObj.AddComponent<TextMeshProUGUI>();
-        labelText.text = label + ":";
-        labelText.fontSize = 20;
-        labelText.alignment = TextAlignmentOptions.MidlineLeft;
-        labelText.color = new Color(0.8f, 0.8f, 0.8f);
-        
-        // Значение
-        GameObject valueObj = new GameObject("Value");
-        valueObj.transform.SetParent(lineObj.transform, false);
-        
-        RectTransform valueRect = valueObj.AddComponent<RectTransform>();
-        valueRect.anchorMin = Vector2.zero;
-        valueRect.anchorMax = Vector2.one;
-        valueRect.offsetMin = Vector2.zero;
-        valueRect.offsetMax = Vector2.zero;
-        
-        TextMeshProUGUI valueText = valueObj.AddComponent<TextMeshProUGUI>();
-        valueText.text = value;
-        valueText.fontSize = 20;
-        valueText.alignment = TextAlignmentOptions.MidlineRight;
-        valueText.color = Color.yellow;
-    }
-    
+
     private static void CreateGameMenu(Transform canvasTransform)
     {
-        GameObject menuPanel = new GameObject("GameMenu");
-        menuPanel.transform.SetParent(canvasTransform, false);
-        
-        RectTransform menuRect = menuPanel.AddComponent<RectTransform>();
-        menuRect.anchorMin = new Vector2(0, 0.85f);
-        menuRect.anchorMax = new Vector2(0.15f, 1);
-        menuRect.offsetMin = new Vector2(5, 5);
-        menuRect.offsetMax = new Vector2(-5, -5);
-        
-        Image menuBg = menuPanel.AddComponent<Image>();
-        menuBg.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-        
-        VerticalLayoutGroup layoutGroup = menuPanel.AddComponent<VerticalLayoutGroup>();
-        layoutGroup.spacing = 3;
-        layoutGroup.padding = new RectOffset(5, 5, 5, 5);
-        layoutGroup.childForceExpandWidth = true;
-        
-        // Кнопка паузы
-        CreateMenuButton(menuPanel.transform, "Pause [P]");
-        
-        // Кнопка статистики
-        CreateMenuButton(menuPanel.transform, "Stats [C]");
-        
-        // Кнопка выхода
-        CreateMenuButton(menuPanel.transform, "Quit [Esc]");
+        GameObject menu = new GameObject("GameMenu");
+        menu.transform.SetParent(canvasTransform, false);
+        RectTransform rt = menu.AddComponent<RectTransform>(); rt.anchorMin = new Vector2(0.3f, 0.3f); rt.anchorMax = new Vector2(0.7f, 0.7f); rt.offsetMin = rt.offsetMax = Vector2.zero;
+        Image bg = menu.AddComponent<Image>(); bg.color = new Color(0f, 0f, 0f, 0.9f);
+
+        var title = new GameObject("Title"); title.transform.SetParent(menu.transform, false); var tText = title.AddComponent<TextMeshProUGUI>(); tText.text = "Game Menu"; tText.color = Color.white;
+        menu.SetActive(false);
     }
-    
-    private static void CreateMenuButton(Transform parent, string label)
-    {
-        GameObject buttonObj = new GameObject(label);
-        buttonObj.transform.SetParent(parent, false);
-        
-        RectTransform buttonRect = buttonObj.AddComponent<RectTransform>();
-        buttonRect.anchorMin = Vector2.zero;
-        buttonRect.anchorMax = Vector2.one;
-        buttonRect.offsetMin = Vector2.zero;
-        buttonRect.offsetMax = Vector2.zero;
-        buttonRect.sizeDelta = new Vector2(0, 30);
-        
-        Image buttonImage = buttonObj.AddComponent<Image>();
-        buttonImage.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
-        
-        Button button = buttonObj.AddComponent<Button>();
-        button.targetGraphic = buttonImage;
-        button.colors = new ColorBlock()
-        {
-            normalColor = new Color(0.3f, 0.3f, 0.3f, 0.8f),
-            highlightedColor = new Color(0.5f, 0.5f, 0.5f, 1),
-            pressedColor = new Color(0.2f, 0.2f, 0.2f, 1),
-            disabledColor = new Color(0.3f, 0.3f, 0.3f, 0.5f),
-            colorMultiplier = 1,
-            fadeDuration = 0.1f
-        };
-        
-        GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(buttonObj.transform, false);
-        
-        RectTransform textRect = textObj.AddComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
-        
-        TextMeshProUGUI buttonText = textObj.AddComponent<TextMeshProUGUI>();
-        buttonText.text = label;
-        buttonText.fontSize = 18;
-        buttonText.alignment = TextAlignmentOptions.Center;
-        buttonText.color = Color.white;
-    }
-    
+
     private static void CreateNotificationPanel(Transform canvasTransform)
     {
-        GameObject notifPanel = new GameObject("NotificationPanel");
-        notifPanel.transform.SetParent(canvasTransform, false);
-        
-        RectTransform notifRect = notifPanel.AddComponent<RectTransform>();
-        notifRect.anchorMin = new Vector2(0.5f, 0.85f);
-        notifRect.anchorMax = new Vector2(1, 1);
-        notifRect.offsetMin = new Vector2(10, 5);
-        notifRect.offsetMax = new Vector2(-10, -5);
-        
-        VerticalLayoutGroup layoutGroup = notifPanel.AddComponent<VerticalLayoutGroup>();
-        layoutGroup.spacing = 5;
-        layoutGroup.childForceExpandWidth = true;
+        GameObject notif = new GameObject("NotificationPanel"); notif.transform.SetParent(canvasTransform, false);
+        RectTransform rt = notif.AddComponent<RectTransform>(); rt.anchorMin = new Vector2(0.25f, 0.85f); rt.anchorMax = new Vector2(0.75f, 0.95f); rt.offsetMin = rt.offsetMax = Vector2.zero;
     }
 }

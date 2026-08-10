@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using System.Collections.Generic;
 
 [DisallowMultipleComponent]
@@ -12,6 +13,10 @@ public class InventoryUIController : MonoBehaviour
     private void Awake()
     {
         if (rootPanel != null) rootPanel.SetActive(false);
+        if (listItemPrefab == null)
+        {
+            listItemPrefab = Resources.Load<GameObject>("Prefabs/ChoiceButton");
+        }
     }
 
     public void Toggle()
@@ -33,7 +38,7 @@ public class InventoryUIController : MonoBehaviour
         foreach (var kv in data)
         {
             var go = Instantiate(listItemPrefab, listContainer);
-            var txt = go.GetComponentInChildren<Text>();
+            var txt = go.GetComponentInChildren<TextMeshProUGUI>();
             if (txt != null)
             {
                 var item = kv.Value;

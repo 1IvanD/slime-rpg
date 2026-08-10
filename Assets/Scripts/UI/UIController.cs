@@ -142,6 +142,47 @@ public class UIController : MonoBehaviour
         {
             GameManager.Instance.QuitGame();
         }
+
+        // quick keys: I = inventory, K = skills
+        if (Input.GetKeyDown(KeyCode.I)) ToggleInventoryUI();
+        if (Input.GetKeyDown(KeyCode.K)) ToggleSkillsUI();
+    }
+
+    public void ToggleInventoryUI()
+    {
+        var invPanel = FindChildByName(this.transform, "InventoryPanel");
+        if (invPanel != null)
+        {
+            invPanel.gameObject.SetActive(!invPanel.gameObject.activeSelf);
+            // refresh if showing
+            if (invPanel.gameObject.activeSelf)
+            {
+                var invCtrl = invPanel.GetComponent<InventoryUIController>() ?? invPanel.GetComponentInChildren<InventoryUIController>();
+                invCtrl?.Refresh();
+            }
+        }
+        else
+        {
+            Debug.LogWarning("ToggleInventoryUI: InventoryPanel not found on canvas.");
+        }
+    }
+
+    public void ToggleSkillsUI()
+    {
+        var skillsPanel = FindChildByName(this.transform, "SkillsPanel");
+        if (skillsPanel != null)
+        {
+            skillsPanel.gameObject.SetActive(!skillsPanel.gameObject.activeSelf);
+            if (skillsPanel.gameObject.activeSelf)
+            {
+                var ctrl = skillsPanel.GetComponent<SkillsUIController>() ?? skillsPanel.GetComponentInChildren<SkillsUIController>();
+                ctrl?.Refresh();
+            }
+        }
+        else
+        {
+            Debug.LogWarning("ToggleSkillsUI: SkillsPanel not found on canvas.");
+        }
     }
 
     public void ShowNotification(string message)
