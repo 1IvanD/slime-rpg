@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class CombatManager : MonoBehaviour
@@ -31,23 +30,31 @@ public class CombatManager : MonoBehaviour
         // award XP
         if (killer != null)
         {
-            var player = killer.GetComponent<PlayerExperience>();
+            var player = killer.GetComponent<Player>();
             if (player != null)
             {
-                player.AddXP(dead.xpReward);
+                player.AddExperience(dead.xpReward);
             }
         }
 
-        // drop loot (placeholder: log drops)
+        // drop loot (attempt to add to inventory or log)
         if (dead.lootTable != null)
         {
             foreach (var e in dead.lootTable.entries)
             {
-                if (Random.value <= e.chance)
+                if (UnityEngine.Random.value <= e.chance)
                 {
-                    int qty = Random.Range(e.minAmount, e.maxAmount + 1);
+                    int qty = UnityEngine.Random.Range(e.minAmount, e.maxAmount + 1);
                     Debug.Log($"Dropped {qty}x {e.itemId}");
-                    // TODO: spawn physical item in world / add to container
+                    if (InventorySystem.Instance != null)
+                    {
+                        // try to add with default params if item definition unknown
+                        InventorySystem.Instance.AddItem(e.itemId, e.itemId, ItemRarity.Common, ItemCategory.Resource, 0.1f, qty, "Loot", 0);
+                    }
+                    else
+                    {
+                        // TODO: spawn pickup prefab
+                    }
                 }
             }
         }

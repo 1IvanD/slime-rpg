@@ -72,7 +72,7 @@ public class PlayerAbilities : MonoBehaviour
             if (absor != null)
             {
                 absor.OnAbsorbed(this);
-                UIController.GetInstance()?.ShowNotification($"Поглощено: {absor.resourceName}");
+                UIController.GetInstance()?.ShowNotification($"Поглощено: {absor.resourceId}");
                 return;
             }
         }

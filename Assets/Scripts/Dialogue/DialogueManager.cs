@@ -48,16 +48,12 @@ public class DialogueManager : MonoBehaviour
         {
             foreach (var id in node.requiredItemIds)
             {
-                // InventorySystem API: try to see if item exists (we only have Add/Remove/Use/Sell) - here we try a Remove with 0? Not available.
-                // instead, we can check by a simple internal query API — if not present, assume false
-                // For now assume InventorySystem has HasItem method; if not, skip this check with a warning
                 var inv = InventorySystem.Instance;
                 if (inv == null)
                 {
                     Debug.LogWarning("DialogueManager: InventorySystem not found — skipping item requirement checks.");
                     break;
                 }
-                // try reflection for HasItem
                 var mi = inv.GetType().GetMethod("HasItem");
                 if (mi != null)
                 {
@@ -110,7 +106,7 @@ public class DialogueManager : MonoBehaviour
             {
                 case DialogueEffect.EffectType.GiveItem:
                     if (InventorySystem.Instance != null)
-                        InventorySystem.Instance.AddItem(e.paramId, e.paramId, InventorySystem.ItemRarity.Common, InventorySystem.ItemCategory.Resource, 0.1f, e.amount, "Given from dialog", 0);
+                        InventorySystem.Instance.AddItem(e.paramId, e.paramId, ItemRarity.Common, ItemCategory.Resource, 0.1f, e.amount, "Given from dialog", 0);
                     else Debug.LogWarning("DialogueManager: InventorySystem missing — cannot give item.");
                     break;
                 case DialogueEffect.EffectType.RemoveItem:
@@ -138,7 +134,7 @@ public class DialogueManager : MonoBehaviour
 
         if (choice.grantItem && !string.IsNullOrEmpty(choice.grantItemId))
         {
-            InventorySystem.Instance?.AddItem(choice.grantItemId, choice.grantItemId, InventorySystem.ItemRarity.Common, InventorySystem.ItemCategory.Resource, 0.1f, choice.grantItemAmount, "Given from choice", 0);
+            InventorySystem.Instance?.AddItem(choice.grantItemId, choice.grantItemId, ItemRarity.Common, ItemCategory.Resource, 0.1f, choice.grantItemAmount, "Given from choice", 0);
         }
 
         var next = currentTree.GetNodeById(choice.targetNodeId);

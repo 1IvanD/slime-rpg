@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 [System.Serializable]
 public class InventoryItem
@@ -149,4 +148,12 @@ public class InventorySystem : MonoBehaviour
     public float GetMaxWeight() => maxWeight;
     public int GetItemCount() => inventory.Count;
     public InventoryItem GetItem(string itemId) => inventory.TryGetValue(itemId, out var item) ? item : null;
+
+    // Helper: check existence of an item
+    public bool HasItem(string itemId, int requiredAmount = 1)
+    {
+        if (string.IsNullOrEmpty(itemId)) return false;
+        if (!inventory.TryGetValue(itemId, out var item)) return false;
+        return item.quantity >= requiredAmount;
+    }
 }
