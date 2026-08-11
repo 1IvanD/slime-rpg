@@ -16,4 +16,7 @@ public class EnemyDef : ScriptableObject
     public float damage = 2f;
     public bool boss = false;
     public bool important = false;
+
+    [Header("Army / group settings")]
+    public int troopCount = 1; // for massed forces (e.g., orc armies)
 }
