@@ -1,86 +1,105 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WarManager : MonoBehaviour
+public partial class WarManager : MonoBehaviour
 {
-    public static WarManager Instance { get; private set; }
-
-    public List<ArmyDef> armies = new List<ArmyDef>();
-    public float tickInterval = 5f; // seconds between simulation steps in Play mode
-
-    private float timer = 0f;
-
-    private void Awake()
+    // Force control of a node by a faction (deterministic outcome)
+    public void ForceControl(string nodeId, string winningFaction)
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-    }
+        if (string.IsNullOrEmpty(nodeId) || string.IsNullOrEmpty(winningFaction)) return;
 
-    private void Start()
-    {
-        timer = tickInterval;
-    }
-
-    private void Update()
-    {
-        timer -= Time.deltaTime;
-        if (timer <= 0f)
-        {
-            SimulateStep();
-            timer = tickInterval;
-        }
-    }
-
-    // Very simple simulation: armies near the same node fight; winner keeps node and reduces troop counts
-    private void SimulateStep()
-    {
-        // group armies by node
-        var byNode = new Dictionary<string, List<ArmyDef>>();
+        ArmyDef winnerArmy = null;
+        // find one army of the winning faction at node
         foreach (var a in armies)
         {
-            if (string.IsNullOrEmpty(a.homeNodeId)) continue;
-            if (!byNode.ContainsKey(a.homeNodeId)) byNode[a.homeNodeId] = new List<ArmyDef>();
-            byNode[a.homeNodeId].Add(a);
+            if (a.homeNodeId == nodeId && !string.IsNullOrEmpty(a.faction) && a.faction.ToLower().Contains(winningFaction.ToLower()))
+            {
+                winnerArmy = a;
+                break;
+            }
         }
 
-        foreach (var kv in byNode)
+        // if no existing winner army, try to find any army of that faction and move it here
+        if (winnerArmy == null)
         {
-            var list = kv.Value;
-            if (list.Count < 2) continue; // nothing to fight
-
-            // compute strength
-            ArmyDef strongest = null;
-            float best = -1f;
-            foreach (var a in list)
+            foreach (var a in armies)
             {
-                float strength = a.troopCount * Mathf.Max(1f, a.averageLevel);
-                if (strength > best) { best = strength; strongest = a; }
+                if (!string.IsNullOrEmpty(a.faction) && a.faction.ToLower().Contains(winningFaction.ToLower()))
+                {
+                    winnerArmy = a;
+                    winnerArmy.homeNodeId = nodeId;
+                    break;
+                }
             }
-
-            // losers lose troops proportional to comparison
-            foreach (var a in list)
-            {
-                if (a == strongest) continue;
-                // casualty ratio
-                float loss = Mathf.Min(a.troopCount, Mathf.RoundToInt(a.troopCount * 0.5f));
-                a.troopCount = Mathf.Max(0, a.troopCount - (int)loss);
-            }
-
-            // winner loses some as well
-            strongest.troopCount = Mathf.Max(0, strongest.troopCount - Mathf.RoundToInt(best * 0.05f));
         }
 
-        Debug.Log("WarManager: simulated a tick.");
+        // eliminate or reduce other armies at this node
+        foreach (var a in armies)
+        {
+            if (a.homeNodeId != nodeId) continue;
+            if (a == winnerArmy) continue;
+            // losers wiped out
+            a.troopCount = 0;
+        }
+
+        if (winnerArmy != null)
+        {
+            // winner loses some troops but retains presence
+            int loss = Mathf.RoundToInt(winnerArmy.troopCount * 0.1f);
+            winnerArmy.troopCount = Mathf.Max(1, winnerArmy.troopCount - loss);
+        }
+
+        Debug.Log($"WarManager.ForceControl: {winningFaction} now controls {nodeId}");
     }
 
-    public void RegisterArmy(ArmyDef a)
+    // Deterministic single-step battle simulation for a node. Returns winning faction name or null.
+    public string SimulateBattleAtNode(string nodeId, int simulationSteps = 1)
     {
-        if (!armies.Contains(a)) armies.Add(a);
-    }
+        if (string.IsNullOrEmpty(nodeId)) return null;
 
-    public void UnregisterArmy(ArmyDef a)
-    {
-        if (armies.Contains(a)) armies.Remove(a);
+        // gather armies at node
+        var list = new List<ArmyDef>();
+        foreach (var a in armies)
+        {
+            if (a.homeNodeId == nodeId) list.Add(a);
+        }
+
+        if (list.Count == 0) return null;
+        if (list.Count == 1) return list[0].faction;
+
+        // compute faction strengths
+        var strengthByFaction = new Dictionary<string, float>();
+        foreach (var a in list)
+        {
+            string f = string.IsNullOrEmpty(a.faction) ? "Unknown" : a.faction;
+            float s = a.troopCount * Mathf.Max(1f, a.averageLevel);
+            if (!strengthByFaction.ContainsKey(f)) strengthByFaction[f] = 0f;
+            strengthByFaction[f] += s;
+        }
+
+        // pick winner (highest strength) deterministically
+        string winner = null; float best = -1f;
+        foreach (var kv in strengthByFaction)
+        {
+            if (kv.Value > best) { best = kv.Value; winner = kv.Key; }
+        }
+
+        // apply casualties: losers lose 50% troopCount, winner loses 5% (example constants)
+        foreach (var a in list)
+        {
+            if (a.faction == winner)
+            {
+                int lost = Mathf.RoundToInt(a.troopCount * 0.05f);
+                a.troopCount = Mathf.Max(1, a.troopCount - lost);
+            }
+            else
+            {
+                int lost = Mathf.RoundToInt(a.troopCount * 0.5f);
+                a.troopCount = Mathf.Max(0, a.troopCount - lost);
+            }
+        }
+
+        Debug.Log($"WarManager.SimulateBattleAtNode: node={nodeId} winner={winner}");
+        return winner;
     }
 }
