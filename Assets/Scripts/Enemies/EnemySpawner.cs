@@ -1,10 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-// Spawns placeholder enemies on WorldMap and in region scenes according to EnemyDef.homeNodeId.
+// Updated EnemySpawner which shows formatted troopCount label and uses OrcCluster prefab for orc faction
 public class EnemySpawner : MonoBehaviour
 {
-    public string enemyPrefabPath = "Prefabs/EnemyPlaceholder"; // Resources path
+    public string enemyPrefabPath = "Prefabs/EnemyCluster"; // Resources path
+    public string orcPrefabPath = "Prefabs/OrcCluster";
 
     private void Start()
     {
@@ -36,31 +37,46 @@ public class EnemySpawner : MonoBehaviour
             return;
         }
 
-        // create simple marker: sphere + label
-        GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        marker.name = "Enemy_" + def.id;
-        Vector3 pos = node.transform.position + new Vector3(Random.Range(-0.5f,0.5f), 0.6f, Random.Range(-0.5f,0.5f));
-        marker.transform.position = pos;
-        marker.transform.localScale = Vector3.one * (def.boss ? 1.4f : 0.6f);
-        marker.transform.SetParent(node.transform, true);
+        GameObject marker = null;
 
-        var mr = marker.GetComponent<MeshRenderer>();
-        if (mr != null)
+        // Prefer special orc prefab for orc faction if available
+        if (!string.IsNullOrEmpty(def.faction) && def.faction.ToLower().Contains("orc"))
         {
-            mr.material.color = def.boss ? Color.red : Color.magenta;
+            var prefab = Resources.Load<GameObject>(orcPrefabPath);
+            if (prefab != null)
+            {
+                marker = GameObject.Instantiate(prefab, node.transform);
+                marker.name = "Enemy_" + def.id;
+            }
         }
 
-        // add a simple label
+        if (marker == null)
+        {
+            // fallback to simple capsule
+            marker = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            marker.name = "Enemy_" + def.id;
+            var mr = marker.GetComponent<MeshRenderer>();
+            if (mr != null) mr.material.color = def.boss ? Color.red : Color.magenta;
+            marker.transform.SetParent(node.transform, true);
+        }
+
+        Vector3 pos = node.transform.position + new Vector3(Random.Range(-0.5f,0.5f), 0.6f, Random.Range(-0.5f,0.5f));
+        marker.transform.position = pos;
+
+        float scale = 0.6f + Mathf.Log10(Mathf.Max(1, def.troopCount)) * 0.15f;
+        if (def.boss) scale *= 1.6f;
+        marker.transform.localScale = Vector3.one * scale;
+
+        // add a label with formatted troopCount
         GameObject label = new GameObject("Label");
         label.transform.SetParent(marker.transform, false);
         label.transform.localPosition = new Vector3(0f, 0.9f, 0f);
         var txt = label.AddComponent<TextMesh>();
-        txt.text = def.displayName;
+        txt.text = def.troopCount > 1 ? NumberFormatter.FormatCount(def.troopCount) : def.displayName;
         txt.characterSize = 0.12f;
         txt.anchor = TextAnchor.MiddleCenter;
         txt.color = Color.white;
 
-        // attach EnemyDef reference for quick inspection
         var comp = marker.AddComponent<EnemyMarker>();
         comp.def = def;
     }
