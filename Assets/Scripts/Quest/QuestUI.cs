@@ -86,12 +86,38 @@ public class QuestUI : MonoBehaviour
         {
             var line = new GameObject("QuestLine_" + q.id);
             line.transform.SetParent(layout.transform, false);
+
+            // text
             var txt = line.AddComponent<Text>();
             txt.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             txt.fontSize = 14;
             txt.alignment = TextAnchor.MiddleLeft;
             txt.color = q.status == QuestDef.QuestStatus.Completed ? Color.gray : Color.white;
             txt.text = FormatQuestLine(q);
+
+            // Go button
+            var btnGO = new GameObject("GoButton");
+            btnGO.transform.SetParent(line.transform, false);
+            var btnRT = btnGO.AddComponent<RectTransform>();
+            btnRT.anchorMin = new Vector2(1f, 0f);
+            btnRT.anchorMax = new Vector2(1f, 1f);
+            btnRT.sizeDelta = new Vector2(60f, 24f);
+            btnRT.anchoredPosition = new Vector2(-70f, 0f);
+
+            var img = btnGO.AddComponent<Image>();
+            img.color = new Color(0.2f, 0.6f, 0.9f, 1f);
+            var btn = btnGO.AddComponent<Button>();
+            var labelGO = new GameObject("Label"); labelGO.transform.SetParent(btnGO.transform, false);
+            var lbl = labelGO.AddComponent<Text>();
+            lbl.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            lbl.text = "Go";
+            lbl.alignment = TextAnchor.MiddleCenter;
+            lbl.color = Color.white;
+            lbl.rectTransform.sizeDelta = btnRT.sizeDelta;
+
+            string qid = q.id; // capture
+            btn.onClick.AddListener(() => { OnGoClicked(qid); });
+
             questTexts[q.id] = txt;
         }
     }
@@ -113,5 +139,25 @@ public class QuestUI : MonoBehaviour
         {
             RefreshAll();
         }
+    }
+
+    private void OnGoClicked(string questId)
+    {
+        GoToQuest(questId);
+    }
+
+    public void GoToQuest(string questId)
+    {
+        var q = QuestManager.Instance?.GetQuest(questId);
+        if (q == null) return;
+        if (string.IsNullOrEmpty(q.associatedNodeId))
+        {
+            WorldMapUI.Instance?.ShowNotification("Нет привязанного узла для этого квеста.");
+            return;
+        }
+
+        // highlight node and attempt travel
+        WorldMapManager.Instance?.HighlightNode(q.associatedNodeId);
+        WorldMapManager.Instance?.TravelTo(q.associatedNodeId);
     }
 }

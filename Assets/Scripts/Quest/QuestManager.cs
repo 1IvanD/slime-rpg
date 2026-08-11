@@ -57,6 +57,7 @@ public class QuestManager : MonoBehaviour
         if (!CanStartQuest(id)) return false;
         q.status = QuestDef.QuestStatus.Active;
         WorldMapUI.Instance?.ShowNotification($"Quest started: {q.displayName}");
+        QuestUI.Instance?.OnQuestUpdated(q);
         return true;
     }
 
@@ -71,7 +72,25 @@ public class QuestManager : MonoBehaviour
         {
             q.status = QuestDef.QuestStatus.Completed;
             WorldMapUI.Instance?.ShowNotification($"Quest completed: {q.displayName}");
+            QuestUI.Instance?.OnQuestUpdated(q);
+
+            // Auto-activate quests that list this as prerequisite
+            foreach (var other in GetAllQuests())
+            {
+                if (other.status == QuestDef.QuestStatus.Locked && other.prerequisiteQuestId == q.id)
+                {
+                    if (CanStartQuest(other.id))
+                    {
+                        StartQuest(other.id);
+                    }
+                }
+            }
+
             return true;
+        }
+        else
+        {
+            QuestUI.Instance?.OnQuestUpdated(q);
         }
         return false;
     }
