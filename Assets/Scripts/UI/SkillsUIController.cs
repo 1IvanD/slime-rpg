@@ -8,8 +8,6 @@ public class SkillsUIController : MonoBehaviour
     public Transform listContainer;
     public GameObject entryPrefab; // simple prefab with Text
 
-    private PlayerAbilities abilities;
-
     private void Awake()
     {
         if (rootPanel != null) rootPanel.SetActive(false);
@@ -22,7 +20,6 @@ public class SkillsUIController : MonoBehaviour
 
     private void Start()
     {
-        abilities = FindObjectOfType<Player>()?.GetComponent<PlayerAbilities>();
     }
 
     public void Refresh()
@@ -30,8 +27,7 @@ public class SkillsUIController : MonoBehaviour
         if (listContainer == null) return;
         foreach (Transform t in listContainer) Destroy(t.gameObject);
 
-        if (abilities == null) abilities = FindObjectOfType<Player>()?.GetComponent<PlayerAbilities>();
-        if (abilities == null)
+        if (SkillManager.Instance == null)
         {
             var go = new GameObject("NoSkills");
             go.transform.SetParent(listContainer, false);
@@ -41,29 +37,33 @@ public class SkillsUIController : MonoBehaviour
             return;
         }
 
-        // Create entries for known ability flags
-        AddSkillEntry("Analyze", abilities.canAnalyze);
-        AddSkillEntry("Absorb", abilities.canAbsorb);
-        AddSkillEntry("Heal", abilities.canHeal);
-
-        // Future: iterate dynamic skill list
-    }
-
-    private void AddSkillEntry(string name, bool unlocked)
-    {
-        if (entryPrefab != null)
+        var learned = SkillManager.Instance.GetLearnedSkills();
+        if (learned == null || learned.Count == 0)
         {
-            var go = Instantiate(entryPrefab, listContainer);
-            var text = go.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null) text.text = $"{name} - {(unlocked ? "Unlocked" : "Locked")}";
-        }
-        else
-        {
-            var go = new GameObject(name);
+            var go = new GameObject("NoSkills");
             go.transform.SetParent(listContainer, false);
             var txt = go.AddComponent<TextMeshProUGUI>();
-            txt.text = $"{name} - {(unlocked ? "Unlocked" : "Locked")}";
+            txt.text = "No skills learned yet.";
             txt.color = Color.white;
+            return;
+        }
+
+        foreach (var s in learned)
+        {
+            if (entryPrefab != null)
+            {
+                var go = Instantiate(entryPrefab, listContainer);
+                var text = go.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null) text.text = $"{s.displayName} - {s.description}";
+            }
+            else
+            {
+                var go = new GameObject(s.id);
+                go.transform.SetParent(listContainer, false);
+                var txt = go.AddComponent<TextMeshProUGUI>();
+                txt.text = $"{s.displayName} - {s.description}";
+                txt.color = Color.white;
+            }
         }
     }
 }
