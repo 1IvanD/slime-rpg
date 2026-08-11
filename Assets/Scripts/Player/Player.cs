@@ -14,6 +14,13 @@ public class Player : MonoBehaviour
     public float startingAttack = 10f;
     public float startingDefense = 5f;
 
+    // new base attributes for extended stats
+    public int startingStrength = 1;
+    public int startingDefenseStat = 1;
+    public int startingMagic = 1;
+    public int startingSpeed = 1;
+    public int startingIntelligence = 1;
+
     private void Awake()
     {
         // Initialize stats from inspector values
@@ -21,6 +28,13 @@ public class Player : MonoBehaviour
         stats.Health = startingHealth;
         stats.Attack = startingAttack;
         stats.Defense = startingDefense;
+
+        // set extended base stats
+        stats.Strength = startingStrength;
+        stats.DefenseStat = startingDefenseStat;
+        stats.Magic = startingMagic;
+        stats.Speed = startingSpeed;
+        stats.Intelligence = startingIntelligence;
     }
 
     public PlayerStats GetStats()
@@ -103,5 +117,20 @@ public class Player : MonoBehaviour
 
         // Update GameObject name
         gameObject.name = displayName;
+    }
+
+    // Reset stats to base inspector values (used before applying equipment bonuses)
+    public void ResetStatsToBase()
+    {
+        stats.MaxHealth = startingHealth;
+        stats.Health = Mathf.Min(stats.Health, stats.MaxHealth);
+        stats.Attack = startingAttack;
+        stats.Defense = startingDefense;
+
+        stats.Strength = startingStrength;
+        stats.DefenseStat = startingDefenseStat;
+        stats.Magic = startingMagic;
+        stats.Speed = startingSpeed;
+        stats.Intelligence = startingIntelligence;
     }
 }

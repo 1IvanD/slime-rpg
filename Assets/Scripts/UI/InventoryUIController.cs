@@ -90,13 +90,9 @@ public class InventoryUIController : MonoBehaviour
 
                     string id = item.itemId;
                     btn.onClick.AddListener(() => {
-                        // Use effect: heal or other
-                        if (InventorySystem.Instance != null)
-                        {
-                            var used = InventorySystem.Instance.UseItem(id);
-                            if (used) UIController.GetInstance()?.ShowNotification($"Used: {item.itemName}");
-                            Refresh();
-                        }
+                        // Use effect via ConsumableSystem
+                        var used = ConsumableSystem.Instance != null && ConsumableSystem.Instance.UseConsumable(id);
+                        if (used) Refresh();
                     });
                 }
                 else

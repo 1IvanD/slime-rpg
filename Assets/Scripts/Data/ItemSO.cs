@@ -25,4 +25,12 @@ public class ItemSO : ScriptableObject
     [Header("Physical & Economic")]
     public float weight = 0.1f;
     public float value = 10f;
+
+    [Header("Consumable Effects")]
+    public EffectType effectType = EffectType.None;
+    public float healAmount = 0f;
+    public float buffDuration = 0f; // placeholder for future
+    public float buffStrength = 0f; // placeholder for future
 }
+
+public enum EffectType { None, Heal, Buff }
