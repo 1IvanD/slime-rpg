@@ -40,9 +40,21 @@ public class CampaignManager : MonoBehaviour
             var ev = events[i];
             if (!ev.autoExecute) continue;
 
-            UIController.GetInstance()?.ShowNotification($"Campaign: {ev.displayName}");
-            Debug.Log($"CampaignManager: executing event {ev.id} ({ev.displayName}) in {ev.delayBeforeExecute}s");
+            WorldMapUI.Instance?.ShowNotification($"Campaign: {ev.displayName}");
+            Debug.Log($"CampaignManager: preparing to execute event {ev.id} ({ev.displayName}) in {ev.delayBeforeExecute}s");
             yield return new WaitForSeconds(ev.delayBeforeExecute);
+
+            // check prerequisite quest
+            if (!string.IsNullOrEmpty(ev.requiredQuestId))
+            {
+                if (!QuestManager.Instance.CanStartQuest(ev.requiredQuestId) && !QuestManager.Instance.IsQuestCompleted(ev.requiredQuestId))
+                {
+                    WorldMapUI.Instance?.ShowNotification($"Event '{ev.displayName}' blocked: required quest not complete.");
+                    Debug.Log($"CampaignManager: event {ev.id} blocked, required quest {ev.requiredQuestId} not complete.");
+                    // skip executing this event for now
+                    continue;
+                }
+            }
 
             ExecuteEvent(ev);
 
@@ -76,12 +88,12 @@ public class CampaignManager : MonoBehaviour
         if (ev.forceWinner && !string.IsNullOrEmpty(ev.winnerFaction))
         {
             WarManager.Instance?.ForceControl(ev.targetNodeId, ev.winnerFaction);
-            UIController.GetInstance()?.ShowNotification($"Event '{ev.displayName}' executed: {ev.winnerFaction} gains control of {ev.targetNodeId}");
+            WorldMapUI.Instance?.ShowNotification($"Event '{ev.displayName}' executed: {ev.winnerFaction} gains control of {ev.targetNodeId}");
             return;
         }
 
         // otherwise run a deterministic simulation for this node
         string winner = WarManager.Instance?.SimulateBattleAtNode(ev.targetNodeId, 1);
-        UIController.GetInstance()?.ShowNotification($"Event '{ev.displayName}' resolved: winner = {winner}");
+        WorldMapUI.Instance?.ShowNotification($"Event '{ev.displayName}' resolved: winner = {winner}");
     }
 }

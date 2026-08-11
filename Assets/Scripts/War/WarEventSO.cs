@@ -1,5 +1,8 @@
 using UnityEngine;
 
+// Update WarEventSO to include prerequisite quest id (optional)
+// NOTE: this file replaces the existing WarEventSO to add requiredQuestId field.
+
 [CreateAssetMenu(menuName = "Tempest/War/WarEvent", fileName = "WarEvent")]
 public class WarEventSO : ScriptableObject
 {
@@ -27,4 +30,7 @@ public class WarEventSO : ScriptableObject
 
     [Tooltip("If true the CampaignManager will auto‑execute this event in sequence")]
     public bool autoExecute = true;
+
+    [Tooltip("Optional quest id that must be completed before this event can execute")]
+    public string requiredQuestId;
 }
