@@ -20,4 +20,9 @@ public class NPCDef : ScriptableObject
     [Header("Gameplay")]
     public int level = 1;
     public string[] tags; // e.g., goblin, dwarf, demon, tempester
+
+    [Header("Affinity / Sympathy")]
+    [Range(0,100)]
+    [Tooltip("Affinity (sympathy) percent toward the player. 0 = neutral/random passerby, 25 = subordinate, 50 = friendly, 100 = loves the player.")]
+    public int affinity = 0;
 }

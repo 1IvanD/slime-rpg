@@ -13,7 +13,7 @@ public class QuestDef : ScriptableObject
 
     [System.Serializable]
     public class Objective
-n    {
+    {
         public string description;
         public bool completed = false;
     }
@@ -22,6 +22,9 @@ n    {
 
     [Tooltip("Optional id of quest required to be completed before this quest can start")]
     public string prerequisiteQuestId;
+
+    [Tooltip("Optional MapNode id associated with the quest (used by QuestUI Go button)")]
+    public string associatedNodeId;
 
     // helper
     public bool IsCompleted()
