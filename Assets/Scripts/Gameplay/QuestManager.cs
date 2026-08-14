@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class QuestManager : MonoBehaviour
+// Legacy/compat QuestManager kept for historical scenes/tools. Renamed to avoid collision with runtime QuestManager.
+public class QuestManager_Legacy : MonoBehaviour
 {
-    public static QuestManager Instance;
+    public static QuestManager_Legacy Instance;
 
     private Dictionary<string, string> quests = new Dictionary<string, string>();
 

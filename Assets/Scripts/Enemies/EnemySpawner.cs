@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-// Updated EnemySpawner which shows formatted troopCount label and uses OrcCluster prefab for orc faction
-public class EnemySpawner : MonoBehaviour
+// Legacy EnemySpawner that was used for WorldMap markers. Renamed to avoid collision with runtime Combat/EnemySpawner.
+public class EnemySpawner_Legacy : MonoBehaviour
 {
     public string enemyPrefabPath = "Prefabs/EnemyCluster"; // Resources path
     public string orcPrefabPath = "Prefabs/OrcCluster";
@@ -17,7 +17,7 @@ public class EnemySpawner : MonoBehaviour
         var defs = Resources.LoadAll<EnemyDef>("Enemies");
         if (defs == null || defs.Length == 0)
         {
-            Debug.LogWarning("EnemySpawner: No EnemyDef found in Resources/Enemies. Run Tools → Tempest → Generate Starter Enemies.");
+            Debug.LogWarning("EnemySpawner_Legacy: No EnemyDef found in Resources/Enemies. Run Tools → Tempest → Generate Starter Enemies.");
             return;
         }
 
@@ -33,7 +33,7 @@ public class EnemySpawner : MonoBehaviour
         var node = WorldMapManager.Instance?.GetNode(def.homeNodeId);
         if (node == null)
         {
-            Debug.LogWarning($"EnemySpawner: MapNode not found for homeNodeId={def.homeNodeId} (enemy={def.id})");
+            Debug.LogWarning($"EnemySpawner_Legacy: MapNode not found for homeNodeId={def.homeNodeId} (enemy={def.id})");
             return;
         }
 

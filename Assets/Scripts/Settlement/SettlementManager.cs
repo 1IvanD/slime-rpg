@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SettlementManager : MonoBehaviour
+// Legacy SettlementManager kept to preserve editor utilities; renamed to avoid collision with canonical SettlementManager.
+public class SettlementManager_Legacy : MonoBehaviour
 {
-    public static SettlementManager Instance { get; private set; }
+    public static SettlementManager_Legacy Instance { get; private set; }
 
     public List<BuildingSO> buildings = new List<BuildingSO>();
 
